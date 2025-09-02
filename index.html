@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Shared Checklist</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <a class="main-page"><img width="150" class="logo"/><h2 class="domain-name"></h2></a>
+    </header>
+    <div class="container">
+        <h1>Shared Checklist</h1>
+        <section class="card" id="new-room">
+            <h2>Create a new room</h2>
+        </section>
+    </div>
+    <footer>
+        <span>&copy; <span class="domain-name"></span></span>
+        <span>Released under the MIT License.</span>
+        <span><a class="source-link" href="https://github.com/">Source code</a></span>
+    </footer>
+
+  <script src="./script.js"></script>
+  <script>
+    const byId = id => document.getElementById(id);
+
+    byId('new-room').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const res = await fetch('api.php?action=create_room', {
+            method: 'POST'
+        }).then(r => r.json());
+
+        const { id, token } = res.data;
+        const link = `room.html?id=${encodeURIComponent(id)}&token=${encodeURIComponent(token)}`;
+        window.location.href = link;
+    });
+  </script>
+</body>
+</html>

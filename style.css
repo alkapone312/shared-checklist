@@ -1,0 +1,172 @@
+:root {
+	--bg: #0f172a;
+	--card: #111827;
+	--text: #e5e7eb;
+	--muted: #9ca3af;
+	--accent: #60a5fa;
+	--border: #1f2937;
+	--ok: #34d399;
+	--warn: #fbbf24;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+	background: var(--bg);
+	color: var(--text);
+}
+
+header {
+	text-align: center;
+	padding: 2rem 1rem 1rem;
+	position: relative;
+}
+
+a {
+  color: inherit;
+}
+
+.container {
+	max-width: 800px;
+	margin: 40px auto;
+	padding: 0 16px;
+}
+
+.small {
+	font-size: 12px;
+}
+
+.muted {
+	color: var(--muted);
+}
+
+.card {
+	background: var(--card);
+	border: 1px solid var(--border);
+	border-radius: 16px;
+	padding: 16px;
+	margin: 16px 0;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+	transition: background-color 1s ease;
+}
+
+.card:hover {
+	background-color: var(--border);
+	cursor: pointer;
+}
+
+label {
+	display: block;
+	margin: 8px 0;
+}
+
+input[type="text"],
+input[type="url"] {
+	width: 100%;
+	padding: 10px 12px;
+	border-radius: 12px;
+	border: 1px solid var(--border);
+	background: #0b1020;
+	color: var(--text);
+	outline: none;
+}
+
+button {
+	padding: 10px 14px;
+	border-radius: 12px;
+	border: 1px solid var(--border);
+	background: var(--accent);
+	color: #081019;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+button.secondary {
+	background: #1f2937;
+	color: var(--text);
+}
+
+button.icon {
+	background: transparent;
+	color: var(--muted);
+	border: none;
+	padding: 6px 8px;
+	font-size: 16px;
+}
+
+.row {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.space-between {
+	justify-content: space-between;
+}
+
+.room-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: end;
+	gap: 16px;
+	margin-bottom: 8px;
+}
+
+ul.list {
+	list-style: none;
+	padding: 0;
+	margin: 12px 0;
+}
+
+ul.list li {
+	display: grid;
+	grid-template-columns: 24px 1fr 40px;
+	gap: 8px;
+	align-items: center;
+	padding: 8px;
+	border-bottom: 1px dashed var(--border);
+}
+
+ul.list li input[type="checkbox"] {
+	width: 18px;
+	height: 18px;
+}
+
+ul.list li span.editable {
+	padding: 6px 8px;
+	border-radius: 8px;
+	outline: none;
+}
+
+ul.list li input[type="checkbox"]:checked+span {
+	text-decoration: line-through;
+	color: var(--muted);
+}
+
+.activity {
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+	font-size: 12px;
+	line-height: 1.6;
+	max-height: 220px;
+	overflow: auto;
+	color: var(--muted);
+}
+
+footer {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	min-height: 50px;
+	padding: 10px;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-around;
+	background-color: var(--card);
+	gap: 10px;
+}

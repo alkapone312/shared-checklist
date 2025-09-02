@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Shared Checklist - Room</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <a class="main-page"><img width="150" class="logo"/><h2 class="domain-name"></h2></a>
+    </header>
+    <div class="container">
+        <header class="room-header">
+            <div>
+                <h1 id="room-name">Checklist</h1>
+                <div class="muted small">Room ID: <code id="room-id"></code></div>
+            </div>
+        </header>
+
+        <section class="card">
+            <form id="add-form" class="row">
+                <input type="text" id="item-text" placeholder="Add item (e.g., milk)" autocomplete="off" required>
+                <button type="submit">Add</button>
+            </form>
+
+            <ul id="list" class="list"></ul>
+            <div class="row space-between">
+                <button id="clear-checked" class="secondary">Clear checked</button>
+                <button id="copy-link" class="secondary">Copy invite link</button>
+            </div>
+        </section>
+    </div>
+    <footer>
+        <span>&copy; <span class="domain-name"></span></span>
+        <span>Released under the MIT License.</span>
+        <span><a class="source-link" href="https://github.com/">Source code</a></span>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let lastSeq = 0;
+        const byId = id => document.getElementById(id);
+        const params = new URLSearchParams(window.location.search);
+        const ROOM_ID = params.get('id');
+        const TOKEN = params.get('token');
+
+        function randId() { 
+            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)); 
+        }
+
+        function timeStr(ts) { 
+            return new Date(ts*1000).toLocaleString(); 
+        }
+
+        const items = new Map(); // id -> {id, text, checked:false}
+
+        function renderList() {
+            const ul = byId('list');
+            ul.innerHTML = '';
+
+            for (const [id, item] of items) {
+                const li = document.createElement('li');
+                li.dataset.id = item.id;
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = !!item.checked;
+                cb.addEventListener('change', () => {
+                sendEvent('toggle', {id: item.id, checked: cb.checked});
+                });
+
+                const span = document.createElement('span');
+                span.textContent = item.text;
+                span.contentEditable = "true";
+                span.spellcheck = false;
+                span.className = 'editable';
+                span.addEventListener('blur', () => {
+                const t = span.textContent.trim();
+                if (t && t !== item.text) {
+                    sendEvent('rename_item', {id: item.id, text: t});
+                } else {
+                    span.textContent = item.text; // revert if empty
+                }
+                });
+
+                const del = document.createElement('button');
+                    del.textContent = '✕';
+                    del.className = 'icon';
+                    del.title = 'Remove';
+                    del.addEventListener('click', () => {
+                    sendEvent('remove_item', {id: item.id});
+                });
+
+                li.appendChild(cb);
+                li.appendChild(span);
+                li.appendChild(del);
+                ul.appendChild(li);
+            }
+        }
+
+        function applyEvent(evt, local=false) {
+            const {type, payload} = evt;
+            if (type === 'add_item') {
+                const id = payload.id;
+                if (!id) {
+                    return;
+                }
+                
+                const text = (payload.text||'').trim();
+                if (!text) {
+                    return;
+                }
+
+                items.set(id, {id, text, checked: false});
+            } else if (type === 'remove_item') {
+                items.delete(payload.id);
+            } else if (type === 'toggle') {
+                const it = items.get(payload.id); 
+                if (it) {
+                    it.checked = !!payload.checked
+                };
+            } else if (type === 'rename_item') {
+                const it = items.get(payload.id); if (it) it.text = (payload.text||'').trim();
+            } else if (type === 'clear_checked') {
+                for (const it of Array.from(items.values())) {
+                    if (it.checked) {
+                        items.delete(it.id);
+                    }
+                }
+            }
+            renderList();
+        }
+
+        // ---- API ----
+        async function fetchRoom() {
+            const res = await fetch(`api.php?action=room&id=${encodeURIComponent(ROOM_ID)}&token=${encodeURIComponent(TOKEN)}`).then(r=>r.json());
+            if (!res.ok) { 
+                alert('Room error: '+(res.error||'')); 
+                window.location.href = "index.html"
+                return; 
+            }
+            byId('room-name').textContent = res.data.name;
+            byId('room-id').textContent = ROOM_ID;
+        }
+
+        async function poll() {
+            try {
+                const url = `api.php?action=events&room_id=${encodeURIComponent(ROOM_ID)}&token=${encodeURIComponent(TOKEN)}&since=${lastSeq}`;
+                const res = await fetch(url).then(r=>r.json());
+                if (!res.ok) { 
+                    console.warn(res.error); 
+                    return; 
+                }
+                const evs = res.data.events;
+                for (const e of evs) {
+                    lastSeq = e.seq
+                    applyEvent(e);
+                }
+            } catch (err) {
+                console.warn('Poll error', err);
+            }
+        }
+
+        async function sendEvent(type, payload) {
+            const body = {room_id: ROOM_ID, token: TOKEN, type, payload};
+            const res = await fetch('api.php?action=append_event', {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(body)
+            }).then(r=>r.json());
+            if (!res.ok) { 
+                alert('Failed: '+ (res.error || '')); 
+
+                return; 
+            }
+            applyEvent({type, payload, ts: Math.floor(Date.now()/1000)}, true);
+        }
+
+        byId('add-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = byId('item-text').value.trim();
+            if (!text) {
+                return;
+            }
+            sendEvent('add_item', {id: randId(), text});
+            byId('item-text').value = '';
+            byId('item-text').focus();
+        });
+
+        byId('clear-checked').addEventListener('click', () => {
+            sendEvent('clear_checked', {});
+        });
+
+        byId('copy-link').addEventListener('click', async () => {
+            const link = window.location.href;
+            try { 
+                await navigator.clipboard.writeText(link); 
+            } catch { 
+                prompt('Copy this link:', link); 
+            }
+        });
+
+        (async function init(){
+            await fetchRoom();
+            await poll();
+            setInterval(poll, 10000); // every 10 seconds
+        })();
+    </script>
+</body>
+</html>
