@@ -16,6 +16,8 @@
                 <h1 id="room-name">Checklist</h1>
                 <div class="muted small">Room ID: <code id="room-id"></code></div>
             </div>
+            <p>Expire time: <span id="expire-time"></span></p>
+            <button id="refresh">Refresh</button>
         </header>
 
         <section class="card">
@@ -123,9 +125,7 @@
                 li.appendChild(controls);
                 ul.appendChild(li);
             });
-
         }
-
 
         function applyEvent(evt, local=false) {
             const {type, payload} = evt;
@@ -175,6 +175,10 @@
             }
             byId('room-name').textContent = res.data.name;
             byId('room-id').textContent = ROOM_ID;
+            byId('expire-time').textContent = formatTimeDifference(new Date(res.data.expire_at * 1000))
+            setInterval(() => {
+                byId('expire-time').textContent = formatTimeDifference(new Date(res.data.expire_at * 1000))
+            }, 1000);
         }
 
         async function poll() {
@@ -232,6 +236,11 @@
             } catch { 
                 prompt('Copy this link:', link); 
             }
+        });
+
+        byId('refresh').addEventListener('click', async () => {
+            await sendEvent('refresh', {});
+            await window.location.reload();
         });
 
         (async function init(){

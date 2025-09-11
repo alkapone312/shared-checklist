@@ -137,7 +137,9 @@ if ($action === 'room') {
         error('Invalid token', 403);
     }
 
-    success(['id' => $room['id']]);
+    $last_activity = get_last_activity_ts($pdo, $id);
+
+    success(['id' => $room['id'], 'expire_at' => $last_activity + EXPIRE_TIME]);
 }
 
 if ($action === 'append_event') {
@@ -152,7 +154,7 @@ if ($action === 'append_event') {
 
     validateToken($room_id, $token);
 
-    $allowed = ['add_item', 'remove_item', 'toggle', 'rename_item', 'clear_checked', 'move_item'];
+    $allowed = ['add_item', 'remove_item', 'toggle', 'rename_item', 'clear_checked', 'move_item', 'refresh'];
     if (!in_array($type, $allowed, true)) {
         error('Invalid event type');
     }
@@ -200,29 +202,6 @@ if ($action === 'events') {
         $events[] = $evt;
     }
     success(['events' => $events]);
-}
-
-if ($action === 'get_expiration') {
-    $room_id = $_GET['room_id'] ?? '';
-    $token = $_GET['token'] ?? '';
-
-    if (!$room_id || !$token) {
-        error('Missing fields');
-    }
-
-    validateToken($room_id, $token);
-
-    $last_activity = get_last_activity($pdo, $room_id);
-    if ($last_activity === null) {
-        error('Room not found', 404);
-    }
-
-    $expiration_time = $last_activity + EXPIRE_TIME;
-
-    success([
-        'room_id' => $room_id,
-        'expires_at' => $expiration_time
-    ]);
 }
 
 error('Unknown action', 404);

@@ -30,6 +30,22 @@ function moveInMap(map, key, newIndex) {
     return new Map(entries);
 }
 
+function formatTimeDifference(targetDate) {
+    const now = new Date();
+    const diffMs = Math.max(0, new Date(targetDate) - now); // ensure non-negative
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return [
+        hours.toString().padStart(2, '0'),
+        minutes.toString().padStart(2, '0'),
+        seconds.toString().padStart(2, '0')
+    ].join(':');
+}
+
 function fillText(selector, value) {
     document.querySelectorAll(selector).forEach(el => el.textContent = value);
 }
