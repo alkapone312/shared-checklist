@@ -122,15 +122,6 @@ ul.list {
 	margin: 12px 0;
 }
 
-ul.list li {
-	display: grid;
-	grid-template-columns: 24px 1fr 40px;
-	gap: 8px;
-	align-items: center;
-	padding: 8px;
-	border-bottom: 1px dashed var(--border);
-}
-
 ul.list li input[type="checkbox"] {
 	width: 18px;
 	height: 18px;
@@ -169,4 +160,31 @@ footer {
 	justify-content: space-around;
 	background-color: var(--card);
 	gap: 10px;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arrows {
+  display: flex;
+  gap: 4px;
+}
+
+.arrow-down {
+  margin-right: 20px;
 }

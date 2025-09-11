@@ -24,8 +24,6 @@
 
   <script src="./script.js"></script>
   <script>
-    const byId = id => document.getElementById(id);
-
     byId('new-room').addEventListener('click', async (e) => {
         e.preventDefault();
         const res = await fetch('api.php?action=create_room', {

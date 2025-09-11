@@ -122,7 +122,7 @@ if ($action === 'append_event') {
 
     validateToken($room_id, $token);
 
-    $allowed = ['add_item', 'remove_item', 'toggle', 'rename_item', 'clear_checked'];
+    $allowed = ['add_item', 'remove_item', 'toggle', 'rename_item', 'clear_checked', 'move_item'];
     if (!in_array($type, $allowed, true)) {
         error('Invalid event type');
     }
