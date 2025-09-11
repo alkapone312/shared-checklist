@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+const EXPIRE_TIME = 24 * 60 * 60; // 24h
+
 function db(): PDO {
     $dbFile = getenv('DB_FILE');
     $dsn = 'sqlite:' . $dbFile;
@@ -20,8 +22,18 @@ function db(): PDO {
         payload TEXT NOT NULL
     )');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_events_room_seq ON events(room_id, seq)');
-    $stmt = $pdo->prepare('SELECT id FROM rooms WHERE created_at < :cutoff');
-    $stmt->execute([':cutoff' => $cutoff]);
+
+    $cutoff = time() - EXPIRE_TIME;
+    $stmt = $pdo->query("
+        SELECT r.id
+        FROM rooms r
+        LEFT JOIN (
+            SELECT room_id, MAX(ts) AS last_event_ts
+            FROM events
+            GROUP BY room_id
+        ) e ON r.id = e.room_id
+        WHERE COALESCE(e.last_event_ts, r.created_at) < $cutoff
+    ");
     $expiredRooms = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
     if ($expiredRooms) {
@@ -31,6 +43,24 @@ function db(): PDO {
     }
 
     return $pdo;
+}
+
+function get_last_activity_ts(PDO $pdo, string $room_id): ?int {
+    $stmt = $pdo->prepare('SELECT created_at FROM rooms WHERE id = ?');
+    $stmt->execute([$room_id]);
+    $room = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$room) {
+        return null;
+    }
+
+    $created_at = (int)$room['created_at'];
+
+    $stmt = $pdo->prepare('SELECT MAX(ts) AS last_event_ts FROM events WHERE room_id = ?');
+    $stmt->execute([$room_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $last_event_ts = (int)($row['last_event_ts'] ?? 0);
+
+    return $last_event_ts > 0 ? $last_event_ts : $created_at;
 }
 
 function uuid(): string {
@@ -135,6 +165,12 @@ if ($action === 'append_event') {
         return $v;
     }, $payload);
 
+    $encodedPayload = json_encode($payload);
+    $maxSize = 256;
+    if (strlen($encodedPayload) > $maxSize) {
+        error('Payload too large (max 1KB)');
+    }
+
     $stmt = $pdo->prepare('INSERT INTO events(room_id, ts, type, payload) VALUES (?, ?, ?, ?)');
     $stmt->execute([$room_id, now(), $type, json_encode($payload)]);
     $seq = (int) $pdo->lastInsertId();
@@ -164,6 +200,29 @@ if ($action === 'events') {
         $events[] = $evt;
     }
     success(['events' => $events]);
+}
+
+if ($action === 'get_expiration') {
+    $room_id = $_GET['room_id'] ?? '';
+    $token = $_GET['token'] ?? '';
+
+    if (!$room_id || !$token) {
+        error('Missing fields');
+    }
+
+    validateToken($room_id, $token);
+
+    $last_activity = get_last_activity($pdo, $room_id);
+    if ($last_activity === null) {
+        error('Room not found', 404);
+    }
+
+    $expiration_time = $last_activity + EXPIRE_TIME;
+
+    success([
+        'room_id' => $room_id,
+        'expires_at' => $expiration_time
+    ]);
 }
 
 error('Unknown action', 404);
