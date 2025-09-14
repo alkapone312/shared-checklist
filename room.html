@@ -173,7 +173,6 @@
                 window.location.href = "index.html"
                 return; 
             }
-            byId('room-name').textContent = res.data.name;
             byId('room-id').textContent = ROOM_ID;
             byId('expire-time').textContent = formatTimeDifference(new Date(res.data.expire_at * 1000))
             setInterval(() => {
